@@ -7,6 +7,9 @@ given by Facebook application registration process.
 
 Extended permissions are supported by defining FACEBOOK_EXTENDED_PERMISSIONS
 setting, it must be a list of values to request.
+
+By default account id and token expiration time are stored in extra_data
+field, check OAuthBackend class for details on how to extend it.
 """
 import cgi
 import urllib
@@ -23,15 +26,18 @@ FACEBOOK_SERVER = 'graph.facebook.com'
 FACEBOOK_AUTHORIZATION_URL = 'https://%s/oauth/authorize' % FACEBOOK_SERVER
 FACEBOOK_ACCESS_TOKEN_URL = 'https://%s/oauth/access_token' % FACEBOOK_SERVER
 FACEBOOK_CHECK_AUTH = 'https://%s/me' % FACEBOOK_SERVER
+EXPIRES_NAME = getattr(settings, 'SOCIAL_AUTH_EXPIRATION', 'expires')
 
 
 class FacebookBackend(OAuthBackend):
     """Facebook OAuth authentication backend"""
     name = 'facebook'
+    # Default extra data to store
+    EXTRA_DATA = [('id', 'id'), ('expires', EXPIRES_NAME)]
 
     def get_user_details(self, response):
         """Return user details from Facebook account"""
-        return {USERNAME: response['name'],
+        return {USERNAME: response.get('username') or response['name'],
                 'email': response.get('email', ''),
                 'fullname': response['name'],
                 'first_name': response.get('first_name', ''),
@@ -40,6 +46,8 @@ class FacebookBackend(OAuthBackend):
 
 class FacebookAuth(BaseOAuth):
     """Facebook OAuth mechanism"""
+    AUTH_BACKEND = FacebookBackend
+
     def auth_url(self):
         """Returns redirect url"""
         args = {'client_id': settings.FACEBOOK_APP_ID,
@@ -79,7 +87,7 @@ class FacebookAuth(BaseOAuth):
         url = FACEBOOK_CHECK_AUTH + '?' + urllib.urlencode(params)
         try:
             return simplejson.load(urllib.urlopen(url))
-        except simplejson.JSONDecodeError:
+        except ValueError:
             return None
 
     @classmethod

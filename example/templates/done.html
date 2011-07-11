@@ -11,45 +11,49 @@
     <tr class="odd"><th>Email:</th> <td>{{ user.email|default:"Not provided" }}</td></tr>
     <tr class="even"><th>First name:</th> <td>{{ user.first_name|default:"Not provided" }}</td></tr>
     <tr class="odd"><th>Last name:</th> <td>{{ user.last_name|default:"Not provided" }}</td></tr>
+    <tr class="even"><th>Last login backend:</th> <td>{{ last_login }}</td></tr>
   </table>
 </div>
 
 <div>
-  <h3>Associate new OAuth credentials:</h3>
+{% if accounts %}
+  <h3>Disconnect accounts</h3>
   <ul>
+  {% for account in accounts %}
     <li>
-      <a rel="nofollow" href="/associate/twitter/">Twitter</a>
-      {% if twitter %}<span class="associated">(associated)</span>{% endif %}
+        <span class="disconnect"><a href={% url socialauth_disconnect_individual account.provider account.id %}>{{ account.provider|title }} (ID {{ account.id }})</a></span>
     </li>
-    <li>
-      <a rel="nofollow" href="/associate/facebook/">Facebook</a>
-      {% if facebook %}<span class="associated">(associated)</span>{% endif %}
-    </li>
-    <li>
-      <a rel="nofollow" href="/associate/orkut/">Orkut</a>
-      {% if orkut %}<span class="associated">(associated)</span>{% endif %}
-    </li>
-    <li>
-      <a rel="nofollow" href="/associate/google-oauth/">Google</a>
-      {% if google_oauth %}<span class="associated">(associated)</span>{% endif %}
-    </li>
+  {% endfor %}
+  </ul>
+{% endif %}
+
+  <h3>Associate new <a href="http://oauth.net/" title="OAuth">OAuth</a> credentials:</h3>
+  <ul>
+  {% for name, backend in backends.oauth %}
+    <li><a rel="nofollow" href="{% url socialauth_associate_begin name %}">{{ name|title }}</a></li>
+  {% endfor %}
   </ul>
 
-  <h3>Associate new OpenID credentials:</h3>
+  <h3>Associate new <a href="http://tools.ietf.org/html/draft-ietf-oauth-v2-10" title="OAuth2">OAuth2</a> credentials:</h3>
   <ul>
+  {% for name, backend in backends.oauth2 %}
+    <li><a rel="nofollow" href="{% url socialauth_associate_begin name %}">{{ name|title }}</a></li>
+  {% endfor %}
+  </ul>
+
+  <h3>Associate new <a href="http://openid.net/" title="OpenId">OpenId</a> credentials:</h3>
+  <ul>
+    {% for name, backend in backends.openid %}
+      {% if name != "livejournal" and name != "openid" %}
+      <li>
+        <a rel="nofollow" href="{% url socialauth_begin name %}">{{ name|title }}</a>
+      </li>
+      {% endif %}
+    {% endfor %}
     <li>
-      <a rel="nofollow" href="/associate/google/">Google</a>
-      {% if google %}<span class="associated">(associated)</span>{% endif %}
-    </li>
-    <li>
-      <a rel="nofollow" href="/associate/yahoo/">Yahoo</a>
-      {% if yahoo %}<span class="associated">(associated)</span>{% endif %}
-    </li>
-    <li>
-      <form action="/login/livejournal/" method="post">{% csrf_token %}
+      <form action="{% url socialauth_associate_begin "livejournal" %}" method="post">{% csrf_token %}
         <div>
           <label for="openid_lj_user">LiveJournal user
-            {% if livejournal %} <span class="associated">(associated)</span>{% endif %}:
           </label>
           <input id="openid_lj_user" type="text" value="" name="openid_lj_user" />
           <input type="submit" value="Login"/>
@@ -57,7 +61,7 @@
       </form>
     </li>
     <li>
-      <form action="/associate/openid/" method="post">{% csrf_token %}
+      <form action="{% url socialauth_associate_begin "openid" %}" method="post">{% csrf_token %}
         <div>
           <label for="openid_identifier">Other provider:</label>
           <input id="openid_identifier" type="text" value="" name="openid_identifier" />
